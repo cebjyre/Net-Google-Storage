@@ -159,4 +159,23 @@ sub object_2_download : Test(2)
 	is($ctx->hexdigest, $self->{config}->{test_bucket}->{known_object}->{md5sum}, 'MD5 hash matches downloaded file');
 }
 
+sub object_3_list : Test(3)
+{
+	my $self = shift;
+	my $gs = $self->{gs};
+	my $config = $self->{config};
+	
+	my $test_bucket_name = $self->{config}->{test_bucket}->{name};
+	my $test_object_name = $self->{config}->{test_bucket}->{known_object}->{name};
+	
+	my $objects = $gs->list_objects($test_bucket_name);
+	my @desired_objects = grep {$_->name eq $test_object_name} @$objects;
+	cmp_ok(scalar @desired_objects, '==', 1, "We matched exactly one object for $test_object_name");
+	
+	my $object = $desired_objects[0];
+	isa_ok($object, 'Net::Google::Storage::Object');
+	
+	is($object->selfLink, $gs->get_object(bucket => $test_bucket_name, object => $test_object_name)->selfLink);
+}
+
 1;

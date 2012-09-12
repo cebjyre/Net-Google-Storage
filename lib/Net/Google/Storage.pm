@@ -105,6 +105,22 @@ sub download_object
 	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
 }
 
+sub list_objects
+{
+	my $self = shift;
+	
+	my $bucket = shift;
+	
+	my $res = $self->get("$api_base/$bucket/o");
+	
+	die 'Failed to list objects' unless $res->is_success;
+	
+	my $response = decode_json($res->decoded_content);
+	
+	my @objects = map {Net::Google::Storage::Object->new($_)} @{$response->{items}};
+	return \@objects;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
