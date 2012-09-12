@@ -9,6 +9,8 @@ use Moose;
 use LWP::UserAgent;
 use JSON;
 
+use Net::Google::Storage::Bucket;
+
 has access_token => (
 	is => 'rw',
 	isa => 'Str',
@@ -31,7 +33,7 @@ has client_secret => (
 	required => 1,
 );
 
-has project_id => (
+has projectId => (
 	is => 'rw',
 	isa => 'Int',
 );
@@ -86,14 +88,31 @@ sub list_buckets
 	my $self = shift;
 	
 	my $ua = $self->ua;
-	my $project_id = $self->project_id;
+	my $projectId = $self->projectId;
 	
-	my $res = $ua->get("$api_base?projectId=$project_id", Authorization => "OAuth " . $self->access_token);
+	my $res = $ua->get("$api_base?projectId=$projectId", Authorization => "OAuth " . $self->access_token);
 	
 	die 'Failed to list buckets' unless $res->is_success;
 	
 	my $response = decode_json($res->decoded_content);
-	return $response->{items};
+	
+	my @buckets = map {Net::Google::Storage::Bucket->new($_)} @{$response->{items}};
+	return \@buckets;
+}
+
+sub get_bucket
+{
+	my $self = shift;
+	
+	my $ua = $self->ua;
+	my $bucket_name = shift;
+	
+	my $res = $ua->get("$api_base/$bucket_name", Authorization => "OAuth " . $self->access_token);
+	die "Failed to get bucket: $bucket_name" unless $res->is_success;
+	
+	my $response = decode_json($res->decoded_content);
+	
+	return Net::Google::Storage::Bucket->new($response);
 }
 
 no Moose;
