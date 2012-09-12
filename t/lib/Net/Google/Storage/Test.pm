@@ -74,7 +74,7 @@ sub bucket_1_view : Test(6)
 	is_deeply($explicitly_requested_bucket, $desired_bucket)
 }
 
-sub bucket_2_create_delete : Test(7)
+sub bucket_2_create : Test(6)
 {
 	my $self = shift;
 	my $gs = $self->{gs};
@@ -93,6 +93,20 @@ sub bucket_2_create_delete : Test(7)
 	$bucket = undef;
 	is($bucket, undef, 'Unset the bucket variable prior to refetching');
 	$bucket = $gs->get_bucket($new_bucket_name);
+	isa_ok($bucket, 'Net::Google::Storage::Bucket');
+	is($bucket->id, $new_bucket_name);
+}
+
+sub bucket_3_delete : Test(3)
+{
+	my $self = shift;
+	my $gs = $self->{gs};
+	my $config = $self->{config};
+
+	my $new_bucket_name = $config->{new_test_bucket}->{name};
+	return 'No configs for creating buckets' unless $new_bucket_name;
+	
+	my $bucket = $gs->get_bucket($new_bucket_name);
 	isa_ok($bucket, 'Net::Google::Storage::Bucket');
 	is($bucket->id, $new_bucket_name);
 	
