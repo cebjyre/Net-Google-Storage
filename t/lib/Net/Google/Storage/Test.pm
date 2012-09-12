@@ -50,7 +50,7 @@ sub _access_token_refresh : Test(5)
 	cmp_ok($expiry, '>', time, 'Access token is set to expire in the future');
 }
 
-sub view_existing_buckets : Test(6)
+sub bucket_1_view : Test(6)
 {
 	my $self = shift;
 	my $gs = $self->{gs};
@@ -72,6 +72,34 @@ sub view_existing_buckets : Test(6)
 	
 	my $explicitly_requested_bucket = $gs->get_bucket($desired_bucket_name);
 	is_deeply($explicitly_requested_bucket, $desired_bucket)
+}
+
+sub bucket_2_create_delete : Test(7)
+{
+	my $self = shift;
+	my $gs = $self->{gs};
+	my $config = $self->{config};
+	
+	my $new_bucket_name = $config->{new_test_bucket}->{name};
+	return 'No configs for creating buckets' unless $new_bucket_name;
+	
+	my $existing_bucket = $gs->get_bucket($new_bucket_name);
+	is($existing_bucket, undef, 'Bucket does not exist yet') or return "Test bucket $new_bucket_name already exists";
+	
+	my $bucket = $gs->insert_bucket({id => $new_bucket_name});
+	isa_ok($bucket, 'Net::Google::Storage::Bucket');
+	is($bucket->id, $new_bucket_name);
+	
+	$bucket = undef;
+	is($bucket, undef, 'Unset the bucket variable prior to refetching');
+	$bucket = $gs->get_bucket($new_bucket_name);
+	isa_ok($bucket, 'Net::Google::Storage::Bucket');
+	is($bucket->id, $new_bucket_name);
+	
+	$gs->delete_bucket($new_bucket_name);
+	
+	$bucket = $gs->get_bucket($new_bucket_name);
+	is($bucket, undef, 'Successfully gotten rid of the bucket')
 }
 
 1;
