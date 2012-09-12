@@ -80,7 +80,16 @@ sub refresh_access_token
 
 sub _build_ua
 {
-	return LWP::UserAgent->new();
+	my $ua = LWP::UserAgent->new(agent => 'Net::Google::Storage ');
+	
+	my @encodings = HTTP::Message::decodable;
+	if(grep {$_ eq 'gzip'} @encodings)
+	{
+		$ua->agent($ua->agent . ' (gzip)');
+		$ua->default_header('Accept-Encoding' => join ', ', @encodings);
+	}
+	
+	return $ua;
 }
 
 sub list_buckets
