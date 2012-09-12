@@ -105,8 +105,7 @@ sub get
 	my $self = shift;
 	my $ua = $self->_ua;
 	
-	my $url = shift;
-	my $res = $ua->get($url);
+	my $res = $ua->get(@_);
 	
 	return $res;
 }
@@ -116,10 +115,17 @@ sub post
 	my $self = shift;
 	my $ua = $self->_ua;
 	
-	my $url = shift;
-	my $bucket_args = shift;
-	my $res = $ua->post($url, 'Content-Type' => 'application/json', Content => encode_json($bucket_args));
+	my $res = $ua->post(@_);
 	return $res;
+}
+
+sub json_post
+{
+	my $self = shift;
+	
+	my $url = shift;
+	my $args = shift;
+	return $self->post($url, 'Content-Type' => 'application/json', Content => encode_json($args));
 }
 
 sub delete
@@ -127,8 +133,7 @@ sub delete
 	my $self = shift;
 	my $ua = $self->_ua;
 	
-	my $url = shift;
-	my $res = $ua->delete($url);
+	my $res = $ua->delete(@_);
 	return $res;
 }
 

@@ -11,6 +11,7 @@ use JSON;
 use HTTP::Status qw(:constants);
 
 use Net::Google::Storage::Bucket;
+use Net::Google::Storage::Object;
 
 with 'Net::Google::Storage::Agent';
 
@@ -58,7 +59,7 @@ sub insert_bucket
 	
 	my $bucket_args = shift;
 	$bucket_args->{projectId} ||= $self->projectId;
-	my $res = $self->post($api_base, $bucket_args);
+	my $res = $self->json_post($api_base, $bucket_args);
 	die "Failed to create bucket: $bucket_args->{id}" unless $res->is_success;
 	
 	my $response = decode_json($res->decoded_content);
@@ -76,6 +77,32 @@ sub delete_bucket
 	die "Failed to delete bucket: $bucket_name" unless $res->is_success;
 	
 	return;
+}
+
+sub get_object
+{
+	my $self = shift;
+	
+	my %args = @_;
+	
+	my $res = $self->get("$api_base/$args{bucket}/o/$args{object}?alt=json");
+	return undef if $res->code == HTTP_NOT_FOUND;
+	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
+	
+	my $response = decode_json($res->decoded_content);
+	
+	return Net::Google::Storage::Object->new($response);
+}
+
+sub download_object
+{
+	my $self = shift;
+	
+	my %args = @_;
+	
+	my $res = $self->get("$api_base/$args{bucket}/o/$args{object}", ':content_file' => $args{filename});
+	return undef if $res->code == HTTP_NOT_FOUND;
+	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
 }
 
 no Moose;

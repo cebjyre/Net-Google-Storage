@@ -6,6 +6,8 @@ use Net::Google::Storage;
 use autodie;
 use Test::More;
 use JSON;
+use File::Temp qw(tempfile);
+use Digest::MD5;
 
 sub _read_config : Test(startup)
 {
@@ -114,6 +116,47 @@ sub bucket_3_delete : Test(3)
 	
 	$bucket = $gs->get_bucket($new_bucket_name);
 	is($bucket, undef, 'Successfully gotten rid of the bucket')
+}
+
+sub object_1_view : Test(4)
+{
+	my $self = shift;
+	my $gs = $self->{gs};
+	my $config = $self->{config};
+	
+	my $test_bucket_name = $self->{config}->{test_bucket}->{name};
+	my $test_object_name = $self->{config}->{test_bucket}->{known_object}->{name};
+	
+	my $existing_object = $gs->get_object(bucket => $test_bucket_name, object => $test_object_name);
+	isa_ok($existing_object, 'Net::Google::Storage::Object');
+	is($existing_object->name, $test_object_name);
+	my $media = $existing_object->media;
+	is($media->{timeCreated}, '2012-09-12T06:26:58.793Z');
+	if($media->{algorithm} eq 'MD5')
+	{
+		is($media->{hash}, $self->{config}->{test_bucket}->{known_object}->{md5sum}, 'MD5 hash matches metadata');
+	}
+	else
+	{
+		ok(1, "No point comparing the hashes");
+	}
+}
+
+sub object_2_download : Test(2)
+{
+	my $self = shift;
+	my $gs = $self->{gs};
+	my $config = $self->{config};
+	
+	my $test_bucket_name = $self->{config}->{test_bucket}->{name};
+	my $test_object_name = $self->{config}->{test_bucket}->{known_object}->{name};
+	my ($fh, $filename) = tempfile(UNLINK => 1);
+	
+	$gs->download_object(bucket => $test_bucket_name, object => $test_object_name, filename => $filename);
+	ok(-e $filename);
+	my $ctx = Digest::MD5->new;
+	$ctx->addfile($fh);
+	is($ctx->hexdigest, $self->{config}->{test_bucket}->{known_object}->{md5sum}, 'MD5 hash matches downloaded file');
 }
 
 1;
