@@ -131,7 +131,7 @@ sub object_1_view : Test(4)
 	isa_ok($existing_object, 'Net::Google::Storage::Object');
 	is($existing_object->name, $test_object_name);
 	my $media = $existing_object->media;
-	is($media->{timeCreated}, '2012-09-12T06:26:58.793Z');
+	is($media->{timeCreated}, $self->{config}->{test_bucket}->{known_object}->{created});
 	if($media->{algorithm} eq 'MD5')
 	{
 		is($media->{hash}, $self->{config}->{test_bucket}->{known_object}->{md5sum}, 'MD5 hash matches metadata');

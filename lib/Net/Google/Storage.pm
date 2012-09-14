@@ -44,7 +44,7 @@ sub get_bucket
 	
 	my $bucket_name = shift;
 	
-	my $res = $self->get("$api_base/$bucket_name");
+	my $res = $self->get($self->_form_url("$api_base/%s", $bucket_name));
 	return undef if $res->code == HTTP_NOT_FOUND;
 	die "Failed to get bucket: $bucket_name" unless $res->is_success;
 	
@@ -73,7 +73,7 @@ sub delete_bucket
 	
 	my $bucket_name = shift;
 	
-	my $res = $self->delete("$api_base/$bucket_name");
+	my $res = $self->delete($self->_form_url("$api_base/%s", $bucket_name));
 	die "Failed to delete bucket: $bucket_name" unless $res->is_success;
 	
 	return;
@@ -85,7 +85,7 @@ sub get_object
 	
 	my %args = @_;
 	
-	my $res = $self->get("$api_base/$args{bucket}/o/$args{object}?alt=json");
+	my $res = $self->get($self->_form_url("$api_base/%s/o/%s?alt=json", $args{bucket}, $args{object}));
 	return undef if $res->code == HTTP_NOT_FOUND;
 	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
 	
@@ -100,7 +100,7 @@ sub download_object
 	
 	my %args = @_;
 	
-	my $res = $self->get("$api_base/$args{bucket}/o/$args{object}", ':content_file' => $args{filename});
+	my $res = $self->get($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}), ':content_file' => $args{filename});
 	return undef if $res->code == HTTP_NOT_FOUND;
 	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
 }
@@ -111,7 +111,7 @@ sub list_objects
 	
 	my $bucket = shift;
 	
-	my $res = $self->get("$api_base/$bucket/o");
+	my $res = $self->get($self->_form_url("$api_base/%s/o", $bucket));
 	
 	die 'Failed to list objects' unless $res->is_success;
 	

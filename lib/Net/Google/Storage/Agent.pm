@@ -8,6 +8,7 @@ package Net::Google::Storage::Agent;
 use Moose::Role;
 use LWP::UserAgent 6.04;
 use JSON;
+use URI::Escape 3.29;
 
 has access_token => (
 	is => 'rw',
@@ -148,5 +149,15 @@ before [qw(get post delete)] => sub {
 		$self->_set_auth_header;
 	}
 };
+
+sub _form_url
+{
+	my $self = shift;
+	
+	my $format = shift;
+	my @args = map {uri_escape_utf8($_)} @_;
+	
+	return sprintf $format, @args;
+}
 
 1;
