@@ -10,33 +10,90 @@ use LWP::UserAgent 6.04;
 use JSON;
 use URI::Escape 3.29;
 
+=head1 DESCRIPTION
+
+Role-module for L<Net::Google::Storage>, handles the http communication side
+of things.
+
+Some or all of the following attributes should be passed in as an argument to
+L<Net::Google::Storage/new>
+
+=attr access_token
+
+An OAuth2 access token used to actually access the resources.
+
+=cut
+
 has access_token => (
 	is => 'rw',
 	isa => 'Str',
 );
+
+=attr refresh_token
+
+An OAuth2 refresh token used for acquiring a new L</access_tokens> - you
+don't need both a refresh_token and an access_token, but you'll need at least
+one of them.
+
+=cut
 
 has refresh_token => (
 	is => 'ro',
 	isa => 'Str',
 );
 
+=attr client_id
+
+The client ID for the user being authenticated - retrieved from Google's
+L<API Console|https://code.google.com/apis/console/#access>.
+
+Required for refreshing access tokens (ie provide if you are also providing
+the L</refresh_token>).
+
+=cut
+
 has client_id => (
 	is => 'ro',
 	isa => 'Str',
-	required => 1,
 );
+
+=attr client_secret
+
+Counterpart to the client ID, also retrieved from the API Console.
+
+Again, only required for refreshing access tokens.
+
+=cut
 
 has client_secret => (
 	is => 'ro',
 	isa => 'Str',
-	required => 1,
 );
+
+=method has_refreshed_access_token
+
+Call without parameters to find whether the L</access_token> has been
+refreshed.
+
+Call with a false value to indicate you know about that refresh, so future
+calls without any parameters will still be useful.
+
+=cut
 
 has has_refreshed_access_token => (
 	is => 'rw',
 	isa => 'Bool',
 	default => 0,
 );
+
+=attr access_token_expiry
+
+The time (in seconds since the epoch) at which the access_token will be
+invalidated. Not required, but if supplied with the L</access_token> it
+B<will> be trusted, and token refresh will be attempted after this time
+without attempting communication.
+
+=cut
 
 has access_token_expiry => (
 	is => 'rw',

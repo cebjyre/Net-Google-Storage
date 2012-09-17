@@ -16,6 +16,52 @@ use Net::Google::Storage::Object;
 
 with 'Net::Google::Storage::Agent';
 
+=head1 SYNOPSIS
+
+  my $gs = Net::Google::Storage->new(
+    projectId => $projectId,
+    %agent_args
+  );
+
+See L<Net::Google::Storage::Agent> for a decription of C<%agent_args>.
+
+  my $buckets = $gs->list_buckets();
+
+  my $bucket = $gs->get_bucket($bucket_name);
+
+  my $new_bucket = $gs->insert_bucket({id => $new_bucket_name});
+
+  $gs->delete_bucket($bucket_name);
+
+  my $objects = $gs->list_objects($bucket_name);
+
+  my $object = $gs->get_object(bucket => $bucket_name, object => $object_name);
+
+  $gs->download_object(bucket => $bucket_name, object => $object_name, filename => $filename);
+
+  my $object = $gs->insert_object(bucket => $bucket_name, object => {name => $object_name}, filename => $filename);
+
+  $gs->delete_object(bucket => $bucket_name, object => $object_name);
+
+=head1 DESCRIPTION
+
+Net::Google::Storage is a library for interacting with the JSON version of
+the Google Storage API, which is currently (as at 2012-09-17) marked as
+experimental.
+
+This module does not (yet) cover the entire surface of the API, but it is a
+decent attempt at providing the most important functionality.
+
+See L<https://developers.google.com/storage/docs/json_api/> for documentation
+of the API itself.
+
+=attr projectId
+
+Google's identifier of the project you are accessing. Available from the
+L<API Console|https://code.google.com/apis/console/#:storage>.
+
+=cut
+
 has projectId => (
 	is => 'rw',
 	isa => 'Int',
@@ -23,6 +69,18 @@ has projectId => (
 
 my $api_base = 'https://www.googleapis.com/storage/v1beta1/b';
 my $upload_api_base = 'https://www.googleapis.com/upload/storage/v1beta1/b';
+
+=method new
+
+Constructs a shiny new B<Net::Google::Storage> object. Arguments include
+C<projectId> and the attributes of L<Net::Google::Storage::Agent>
+
+=method list_buckets
+
+Returns an arrayref of L<Net::Google::Storage::Bucket> objects for the
+current projectId.
+
+=cut
 
 sub list_buckets
 {
@@ -40,6 +98,13 @@ sub list_buckets
 	return \@buckets;
 }
 
+=method get_bucket
+
+Takes a bucket name as the only argument, returns the matching
+L<Net::Google::Storage::Bucket> object or undef if nothing matches.
+
+=cut
+
 sub get_bucket
 {
 	my $self = shift;
@@ -55,6 +120,14 @@ sub get_bucket
 	return Net::Google::Storage::Bucket->new($response);
 }
 
+=method insert_bucket
+
+Takes some bucket metadata as the only argument (could be as simple as
+C<< {id => $bucket_name} >>), creates a new bucket and returns the matching
+L<Net::Google::Storage::Bucket> object.
+
+=cut
+
 sub insert_bucket
 {
 	my $self = shift;
@@ -69,6 +142,11 @@ sub insert_bucket
 	return Net::Google::Storage::Bucket->new($response);
 }
 
+=method delete_bucket
+
+Takes a bucket name as the only argument, deletes the bucket.
+=cut
+
 sub delete_bucket
 {
 	my $self = shift;
@@ -81,31 +159,12 @@ sub delete_bucket
 	return;
 }
 
-sub get_object
-{
-	my $self = shift;
-	
-	my %args = @_;
-	
-	my $res = $self->get($self->_form_url("$api_base/%s/o/%s?alt=json", $args{bucket}, $args{object}));
-	return undef if $res->code == HTTP_NOT_FOUND;
-	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
-	
-	my $response = decode_json($res->decoded_content);
-	
-	return Net::Google::Storage::Object->new($response);
-}
+=method list_objects
 
-sub download_object
-{
-	my $self = shift;
-	
-	my %args = @_;
-	
-	my $res = $self->get($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}), ':content_file' => $args{filename});
-	return undef if $res->code == HTTP_NOT_FOUND;
-	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
-}
+Takes a bucket name as the only argument, returns an arrayref of
+L<Net::Google::Storage::Object> objects.
+
+=cut
 
 sub list_objects
 {
@@ -122,6 +181,57 @@ sub list_objects
 	my @objects = map {Net::Google::Storage::Object->new($_)} @{$response->{items}};
 	return \@objects;
 }
+
+=method get_object
+
+Takes a hash (not hashref) of arguments with keys: I<bucket> and I<object>
+and returns the matching L<Net::Google::Storage::Object> object (or undef if
+no match was found).
+
+=cut
+
+sub get_object
+{
+	my $self = shift;
+	
+	my %args = @_;
+	
+	my $res = $self->get($self->_form_url("$api_base/%s/o/%s?alt=json", $args{bucket}, $args{object}));
+	return undef if $res->code == HTTP_NOT_FOUND;
+	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
+	
+	my $response = decode_json($res->decoded_content);
+	
+	return Net::Google::Storage::Object->new($response);
+}
+
+=method download_object
+
+Takes a hash (not hashref) of arguments with keys: I<bucket>, I<object>, and
+I<filename> and downloads the matching object as the desired filename.
+
+Returns undef if the object doesn't exist, true for success.
+
+=cut
+
+sub download_object
+{
+	my $self = shift;
+	
+	my %args = @_;
+	
+	my $res = $self->get($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}), ':content_file' => $args{filename});
+	return undef if $res->code == HTTP_NOT_FOUND;
+	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
+}
+
+=method insert_object
+
+Takes a hash of arguments with keys: I<bucket>, I<filename> and I<object>
+where I<object> contains the necessary metadata to upload the file, which is,
+at minimum, the I<name> field.
+
+=cut
 
 sub insert_object
 {
@@ -193,6 +303,13 @@ sub insert_object
 	
 	return Net::Google::Storage::Object->new($response);
 }
+
+=method delete_object
+
+Takes a hash of arguments with keys: I<bucket> and I<object> and deletes the
+matching object.
+
+=cut
 
 sub delete_object
 {
