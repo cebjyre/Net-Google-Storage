@@ -137,6 +137,15 @@ sub _set_auth_header
 	}
 }
 
+=method refresh_access_token
+
+Call (on the L<Net::Google::Storage> object) to refresh the access token.
+Requires the C<client_id>, the C<client_secret> and the C<refresh_token> to
+all be set. Updates the C<access_token>, the C<access_token_expiry> and
+C<has_refreshed_access_token> will start returning true.
+
+=cut
+
 sub refresh_access_token
 {
 	my $self = shift;
