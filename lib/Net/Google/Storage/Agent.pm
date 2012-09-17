@@ -146,7 +146,8 @@ sub put
 	return $res;
 }
 
-before [qw(get post delete put)] => sub {
+around [qw(get post delete put)] => sub {
+	my $orig = shift;
 	my $self = shift;
 	
 	my $ua = $self->_ua;
@@ -156,6 +157,15 @@ before [qw(get post delete put)] => sub {
 	{
 		$self->_set_auth_header;
 	}
+	
+	my $res = $self->$orig(@_);
+	if($res->code == 401 && $self->refresh_token)
+	{
+		$self->refresh_access_token;
+		$res = $self->$orig(@_);
+	}
+	
+	return $res;
 };
 
 sub _form_url
