@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use autodie;
 package Net::Google::Storage;
 
 # ABSTRACT: Access the Google Storage JSON API (currently experimental).
@@ -21,6 +22,7 @@ has projectId => (
 );
 
 my $api_base = 'https://www.googleapis.com/storage/v1beta1/b';
+my $upload_api_base = 'https://www.googleapis.com/upload/storage/v1beta1/b';
 
 sub list_buckets
 {
@@ -119,6 +121,77 @@ sub list_objects
 	
 	my @objects = map {Net::Google::Storage::Object->new($_)} @{$response->{items}};
 	return \@objects;
+}
+
+sub insert_object
+{
+	my $self = shift;
+	
+	my %args = @_;
+	
+	my $url = $self->_form_url("$upload_api_base/%s/o?uploadType=resumable", $args{bucket});
+	my $filename = $args{filename} || die 'A filename is required';
+	
+	die "Unable to find $filename" unless -e $filename;
+	my $filesize = -s _;
+	
+	my $object_hash = $args{object};
+	unless($object_hash->{media}->{contentType})
+	{
+		require LWP::MediaTypes;
+		$object_hash->{media}->{contentType} = LWP::MediaTypes::guess_media_type($filename);
+	}
+	
+	my $content_type = $object_hash->{media}->{contentType};
+	my $res = $self->json_post($url, 'X-Upload-Content-Type' => $content_type, 'X-Upload-Content-Length' => $filesize, $object_hash);
+	my $resumable_url = $res->header('Location');
+	
+	my %headers = (
+		'Content-Length' => $filesize,
+		'Content-Type' => $content_type,
+	);
+	
+	local $/;
+	open(my $fh, '<', $filename);
+	my $file_contents = <$fh>;
+	
+	$res = $self->put($resumable_url, %headers, Content => $file_contents);
+	
+	#resuming code
+	my $retry_count = 0;
+	my $code = $res->code;
+	while($code >=500 && $code <600 && $retry_count++ < 8)
+	{
+		sleep 2**$retry_count;
+		$res = $self->put($resumable_url, 'Content-Length' => 0, 'Content-Range' => "bytes */$filesize");
+		last if $res->is_success;
+		next unless $res->code == 308;
+		
+		my $range = $res->header('Range');
+		next unless $range;
+		
+		if($range =~ /bytes=0-(\d+)/)
+		{
+			my $offset = $1+1;
+			seek($fh, $offset, 0);
+			$file_contents = <$fh>;
+			
+			%headers = (
+				'Content-Length' => $filesize - $offset,
+				'Content-Range' => sprintf('bytes %d-%d/%d', $offset, $filesize-1, $filesize),
+			);
+			$res = $self->put($resumable_url, %headers, Content => $file_contents);
+			$code = $res->code;
+		}
+		else
+		{
+			next;
+		}
+	}
+	
+	my $response = decode_json($res->decoded_content);
+	
+	return Net::Google::Storage::Object->new($response);
 }
 
 no Moose;

@@ -124,9 +124,8 @@ sub json_post
 {
 	my $self = shift;
 	
-	my $url = shift;
-	my $args = shift;
-	return $self->post($url, 'Content-Type' => 'application/json', Content => encode_json($args));
+	my $args = pop;
+	return $self->post(@_, 'Content-Type' => 'application/json', Content => encode_json($args));
 }
 
 sub delete
@@ -138,7 +137,16 @@ sub delete
 	return $res;
 }
 
-before [qw(get post delete)] => sub {
+sub put
+{
+	my $self = shift;
+	my $ua = $self->_ua;
+	
+	my $res = $ua->put(@_);
+	return $res;
+}
+
+before [qw(get post delete put)] => sub {
 	my $self = shift;
 	
 	my $ua = $self->_ua;

@@ -178,4 +178,35 @@ sub object_3_list : Test(3)
 	is($object->selfLink, $gs->get_object(bucket => $test_bucket_name, object => $test_object_name)->selfLink);
 }
 
+sub object_4_upload : Test(5)
+{
+	my $self = shift;
+	my $gs = $self->{gs};
+	my $config = $self->{config};
+	
+	my $test_bucket_name = $self->{config}->{test_bucket}->{name};
+	my $filename = $self->{config}->{test_bucket}->{upload_object}->{name};
+	
+	is($gs->get_object(bucket => $test_bucket_name, object => $filename), undef) or return "$filename already exists";
+	
+	my $new_object = $gs->insert_object(bucket => $test_bucket_name, object => {name => $filename, media => {}}, filename => $filename);
+	isa_ok($new_object, 'Net::Google::Storage::Object');
+	is($new_object->name, $filename);
+	my $media = $new_object->media;
+	if($media->{algorithm} eq 'MD5')
+	{
+		my $ctx = Digest::MD5->new;
+		open(my $fh, '<', $filename);
+		$ctx->addfile($fh);
+		is($media->{hash}, $ctx->hexdigest, 'MD5 hash metadata matches uploaded file');
+	}
+	else
+	{
+		ok(1, "Unable to check nonexistent metadata")
+	}
+	
+	my $same_object = $gs->get_object(bucket => $test_bucket_name, object => $filename);
+	is_deeply($same_object, $new_object);
+}
+
 1;
