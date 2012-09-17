@@ -209,4 +209,22 @@ sub object_4_upload : Test(5)
 	is_deeply($same_object, $new_object);
 }
 
+sub object_5_delete : Test(3)
+{
+	my $self = shift;
+	my $gs = $self->{gs};
+	my $config = $self->{config};
+	
+	my $test_bucket_name = $self->{config}->{test_bucket}->{name};
+	my $filename = $self->{config}->{test_bucket}->{upload_object}->{name};
+	
+	my $object = $gs->get_object(bucket => $test_bucket_name, object => $filename);
+	isa_ok($object, 'Net::Google::Storage::Object');
+	is($object->name, $filename);
+	
+	$gs->delete_object(bucket => $test_bucket_name, object => $filename);
+	$object = $gs->get_object(bucket => $test_bucket_name, object => $filename);
+	is($object, undef, 'Successfully gotten rid of the object');
+}
+
 1;

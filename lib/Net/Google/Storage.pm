@@ -194,6 +194,18 @@ sub insert_object
 	return Net::Google::Storage::Object->new($response);
 }
 
+sub delete_object
+{
+	my $self = shift;
+	
+	my %args = @_;
+	
+	my $res = $self->delete($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}));
+	die "Failed to delete object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
+	
+	return;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
