@@ -88,7 +88,7 @@ sub list_buckets
 	
 	my $projectId = $self->projectId;
 	
-	my $res = $self->get("$api_base?projectId=$projectId");
+	my $res = $self->_get("$api_base?projectId=$projectId");
 	
 	die 'Failed to list buckets' unless $res->is_success;
 	
@@ -111,7 +111,7 @@ sub get_bucket
 	
 	my $bucket_name = shift;
 	
-	my $res = $self->get($self->_form_url("$api_base/%s", $bucket_name));
+	my $res = $self->_get($self->_form_url("$api_base/%s", $bucket_name));
 	return undef if $res->code == HTTP_NOT_FOUND;
 	die "Failed to get bucket: $bucket_name" unless $res->is_success;
 	
@@ -134,7 +134,7 @@ sub insert_bucket
 	
 	my $bucket_args = shift;
 	$bucket_args->{projectId} ||= $self->projectId;
-	my $res = $self->json_post($api_base, $bucket_args);
+	my $res = $self->_json_post($api_base, $bucket_args);
 	die "Failed to create bucket: $bucket_args->{id}" unless $res->is_success;
 	
 	my $response = decode_json($res->decoded_content);
@@ -153,7 +153,7 @@ sub delete_bucket
 	
 	my $bucket_name = shift;
 	
-	my $res = $self->delete($self->_form_url("$api_base/%s", $bucket_name));
+	my $res = $self->_delete($self->_form_url("$api_base/%s", $bucket_name));
 	die "Failed to delete bucket: $bucket_name" unless $res->is_success;
 	
 	return;
@@ -172,7 +172,7 @@ sub list_objects
 	
 	my $bucket = shift;
 	
-	my $res = $self->get($self->_form_url("$api_base/%s/o", $bucket));
+	my $res = $self->_get($self->_form_url("$api_base/%s/o", $bucket));
 	
 	die 'Failed to list objects' unless $res->is_success;
 	
@@ -196,7 +196,7 @@ sub get_object
 	
 	my %args = @_;
 	
-	my $res = $self->get($self->_form_url("$api_base/%s/o/%s?alt=json", $args{bucket}, $args{object}));
+	my $res = $self->_get($self->_form_url("$api_base/%s/o/%s?alt=json", $args{bucket}, $args{object}));
 	return undef if $res->code == HTTP_NOT_FOUND;
 	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
 	
@@ -220,7 +220,7 @@ sub download_object
 	
 	my %args = @_;
 	
-	my $res = $self->get($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}), ':content_file' => $args{filename});
+	my $res = $self->_get($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}), ':content_file' => $args{filename});
 	return undef if $res->code == HTTP_NOT_FOUND;
 	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
 }
@@ -253,7 +253,7 @@ sub insert_object
 	}
 	
 	my $content_type = $object_hash->{media}->{contentType};
-	my $res = $self->json_post($url, 'X-Upload-Content-Type' => $content_type, 'X-Upload-Content-Length' => $filesize, $object_hash);
+	my $res = $self->_json_post($url, 'X-Upload-Content-Type' => $content_type, 'X-Upload-Content-Length' => $filesize, $object_hash);
 	my $resumable_url = $res->header('Location');
 	
 	my %headers = (
@@ -265,7 +265,7 @@ sub insert_object
 	open(my $fh, '<', $filename);
 	my $file_contents = <$fh>;
 	
-	$res = $self->put($resumable_url, %headers, Content => $file_contents);
+	$res = $self->_put($resumable_url, %headers, Content => $file_contents);
 	
 	#resuming code
 	my $retry_count = 0;
@@ -273,7 +273,7 @@ sub insert_object
 	while($code >=500 && $code <600 && $retry_count++ < 8)
 	{
 		sleep 2**$retry_count;
-		$res = $self->put($resumable_url, 'Content-Length' => 0, 'Content-Range' => "bytes */$filesize");
+		$res = $self->_put($resumable_url, 'Content-Length' => 0, 'Content-Range' => "bytes */$filesize");
 		last if $res->is_success;
 		next unless $res->code == 308;
 		
@@ -290,7 +290,7 @@ sub insert_object
 				'Content-Length' => $filesize - $offset,
 				'Content-Range' => sprintf('bytes %d-%d/%d', $offset, $filesize-1, $filesize),
 			);
-			$res = $self->put($resumable_url, %headers, Content => $file_contents);
+			$res = $self->_put($resumable_url, %headers, Content => $file_contents);
 			$code = $res->code;
 		}
 		else
@@ -317,7 +317,7 @@ sub delete_object
 	
 	my %args = @_;
 	
-	my $res = $self->delete($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}));
+	my $res = $self->_delete($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}));
 	die "Failed to delete object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
 	
 	return;

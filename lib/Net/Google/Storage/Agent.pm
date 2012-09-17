@@ -158,7 +158,7 @@ sub refresh_access_token
 	$self->_set_auth_header;
 }
 
-sub get
+sub _get
 {
 	my $self = shift;
 	my $ua = $self->_ua;
@@ -168,7 +168,7 @@ sub get
 	return $res;
 }
 
-sub post
+sub _post
 {
 	my $self = shift;
 	my $ua = $self->_ua;
@@ -177,15 +177,15 @@ sub post
 	return $res;
 }
 
-sub json_post
+sub _json_post
 {
 	my $self = shift;
 	
 	my $args = pop;
-	return $self->post(@_, 'Content-Type' => 'application/json', Content => encode_json($args));
+	return $self->_post(@_, 'Content-Type' => 'application/json', Content => encode_json($args));
 }
 
-sub delete
+sub _delete
 {
 	my $self = shift;
 	my $ua = $self->_ua;
@@ -194,7 +194,7 @@ sub delete
 	return $res;
 }
 
-sub put
+sub _put
 {
 	my $self = shift;
 	my $ua = $self->_ua;
@@ -203,7 +203,7 @@ sub put
 	return $res;
 }
 
-around [qw(get post delete put)] => sub {
+around [qw(_get _post _delete _put)] => sub {
 	my $orig = shift;
 	my $self = shift;
 	
