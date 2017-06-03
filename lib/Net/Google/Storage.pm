@@ -67,8 +67,8 @@ has projectId => (
 	isa => 'Int',
 );
 
-my $api_base = 'https://www.googleapis.com/storage/v1beta1/b';
-my $upload_api_base = 'https://www.googleapis.com/upload/storage/v1beta1/b';
+my $api_base = 'https://www.googleapis.com/storage/v1/b';
+my $upload_api_base = 'https://www.googleapis.com/upload/storage/v1/b';
 
 =method new
 
@@ -135,7 +135,7 @@ sub insert_bucket
 	my $bucket_args = shift;
 	$bucket_args->{projectId} ||= $self->projectId;
 	my $res = $self->_json_post($api_base, $bucket_args);
-	die "Failed to create bucket: $bucket_args->{id}" unless $res->is_success;
+	die "Failed to create bucket: $bucket_args->{id}" . $res->content unless $res->is_success;
 	
 	my $response = decode_json($res->decoded_content);
 	
@@ -220,7 +220,7 @@ sub download_object
 	
 	my %args = @_;
 	
-	my $res = $self->_get($self->_form_url("$api_base/%s/o/%s", $args{bucket}, $args{object}), ':content_file' => $args{filename});
+	my $res = $self->_get($self->_form_url("$api_base/%s/o/%s?alt=media", $args{bucket}, $args{object}), ':content_file' => $args{filename});
 	return undef if $res->code == HTTP_NOT_FOUND;
 	die "Failed to get object: $args{object} in bucket: $args{bucket}" unless $res->is_success;
 }

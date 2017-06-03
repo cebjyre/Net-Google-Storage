@@ -4,6 +4,6 @@ package Net::Google::Storage::Types;
 
 use Moose::Util::TypeConstraints;
 
-enum 'Net::Google::Storage::Types::BucketLocation' => ['US', 'EU'];
+subtype 'Net::Google::Storage::Types::BucketLocation', as 'Str';
 
 1;
