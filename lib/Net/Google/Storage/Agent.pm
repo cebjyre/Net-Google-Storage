@@ -158,7 +158,7 @@ sub refresh_access_token
 		grant_type => 'refresh_token',
 	});
 	
-	die 'Failed to refresh the access token' unless $res->is_success;
+	die 'Failed to refresh the access token' . $res->content unless $res->is_success;
 	
 	my $response = decode_json($res->decoded_content);
 	$self->access_token($response->{access_token});
