@@ -2,6 +2,9 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+0.2.0     2017-06-08 00:19:30EST+1000 Australia/Sydney
+    Upgraded to account for changes in endpoints etc
+
 0.1.2     2012-11-19 19:09:21 Australia/Sydney
     Test::Class is no longer a hard prerequisite (RT-81270).
     Including the repository metadata.
@@ -11,4 +14,3 @@ Revision history for {{$dist->name}}
 
 v0.1.0    2012-09-17 23:53:42 Australia/Sydney
     First release. Not perfect, but usable.
-
