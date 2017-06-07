@@ -64,16 +64,26 @@ has bucket => (
 	isa => 'Str',
 );
 
-=attr media
+=attr timeCreated
 
-A hashref containing sundry information about the file itself - check out the
-L<docs|https://developers.google.com/storage/docs/json_api/v1/objects#resource>.
+The creation timestamp of the object
 
 =cut
 
-has media => (
+has timeCreated => (
 	is => 'ro',
-	isa => 'HashRef',
+	isa => 'Str',
+);
+
+=attr md5Hash
+
+A base64 encoded checksum of the object's data
+
+=cut
+
+has md5Hash => (
+	is => 'ro',
+	isa => 'Str',
 );
 
 =attr contentEncoding
@@ -135,4 +145,3 @@ no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;
-

@@ -88,9 +88,9 @@ sub list_buckets
 	
 	my $projectId = $self->projectId;
 	
-	my $res = $self->_get("$api_base?projectId=$projectId");
+	my $res = $self->_get("$api_base?project=$projectId");
 	
-	die 'Failed to list buckets' unless $res->is_success;
+	die 'Failed to list buckets' . $res->decoded_content unless $res->is_success;
 	
 	my $response = decode_json($res->decoded_content);
 	
@@ -133,8 +133,7 @@ sub insert_bucket
 	my $self = shift;
 	
 	my $bucket_args = shift;
-	$bucket_args->{projectId} ||= $self->projectId;
-	my $res = $self->_json_post($api_base, $bucket_args);
+	my $res = $self->_json_post($api_base . '?project=' . $self->projectId, $bucket_args);
 	die "Failed to create bucket: $bucket_args->{id}" . $res->content unless $res->is_success;
 	
 	my $response = decode_json($res->decoded_content);
